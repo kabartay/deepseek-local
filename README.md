@@ -10,6 +10,8 @@ Everything runs on your Mac. No API keys, no cloud, no data leaving your machine
 
 ## What you get
 
+![Open WebUI running DeepSeek locally](docs/openwebui.png)
+
 | Tool | Role | Cloud equivalent |
 |------|------|------------------|
 | Ollama | Model runtime | — |
