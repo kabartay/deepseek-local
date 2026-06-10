@@ -15,8 +15,8 @@ Everything runs on your Mac. No API keys, no cloud, no data leaving your machine
 | Tool | Role | Cloud equivalent |
 |------|------|------------------|
 | Ollama | Model runtime | — |
-| DeepSeek-Coder-V2 16B Lite (32k ctx) | Main coding model | mid-tier cloud models |
-| Qwen2.5-Coder 7B (32k ctx) | Fast autocomplete model | GitHub Copilot |
+| DeepSeek-Coder-V2 16B Lite (32k ctx) | Chat / reasoning model | mid-tier cloud models |
+| Qwen2.5-Coder 7B (32k ctx) | Agentic editing + autocomplete | GitHub Copilot |
 | aider | Terminal coding agent | Claude Code |
 | Continue.dev | VS Code / JetBrains inline assistant | Cursor / Copilot Chat |
 | Open WebUI | Browser chat UI | claude.ai |
@@ -55,15 +55,21 @@ ds-status            # confirm Ollama is up and models are listed
 
 ```bash
 cd ~/your-project
-ds                    # start aider with DeepSeek
+ds                    # start aider with the coding model
 ```
 
+![aider applying an edit with Qwen](docs/aider-demo.png)
+
+*aider adding type hints and docstrings, applied directly to the file.*
+
 Inside aider:
-- `/add path/to/file.py` — bring a file into the conversation
+- `/add path/to/file.py` — bring a file into the conversation (always add a file before asking for edits)
 - `/run pytest` — run a command and feed the output back
 - `/diff` — show pending changes
 - `/commit` — commit them
 - `/help` — full list
+
+> **Note on models:** aider is configured to use **Qwen2.5-Coder** rather than DeepSeek. In testing, Qwen follows aider's structured SEARCH/REPLACE edit format reliably, while DeepSeek-Coder-V2 — despite producing good code — frequently breaks the edit protocol (leaking the filename into the file, or appending malformed blocks). DeepSeek remains the default for chat in Open WebUI, where the edit protocol doesn't apply. See [Troubleshooting](#aider-says-the-llm-did-not-conform-to-the-edit-format).
 
 ### VS Code / JetBrains (Continue.dev)
 
@@ -87,12 +93,21 @@ models:
     source: deepseek-coder-v2:16b-lite-instruct-q4_K_M  # or :33b-instruct-q4_K_M if you have the RAM
     alias: deepseek-coder-32k
     num_ctx: 32768
+  fast:
+    source: qwen2.5-coder:7b-instruct-q4_K_M
+    alias: qwen-coder-fast-32k
+    num_ctx: 32768
+
+aider:
+  model_ref: fast        # Qwen — reliable with aider's edit format
+  edit_format: diff
 ```
 
 Common customizations:
 
 - **Use a bigger model** — change `models.main.source` to `deepseek-coder-v2:33b-instruct-q4_K_M` (needs ~25 GB RAM)
 - **Change context window** — bump `num_ctx`. Default Ollama is 2048, which is uselessly small; we override to 32k
+- **Swap the aider model** — change `aider.model_ref` to `main` to use DeepSeek (not recommended — see the note above)
 - **Disable Open WebUI** — set `webui.enabled: false`
 - **Point at a remote Ollama** — set `ollama.host` to e.g. `http://desktop.local:11434`
 - **Add shell aliases** — extend `shell.aliases`
@@ -114,23 +129,36 @@ Steps are defined as separate modules under [`src/dslocal/steps/`](./src/dslocal
 
 Different tools for different moments. They all share the same models underneath.
 
-- **aider** — multi-file refactors, "implement this feature", "fix this bug", "add tests". Closest to the Claude Code experience.
+- **aider** (Qwen) — multi-file refactors, "implement this feature", "fix this bug", "add tests". Closest to the Claude Code experience.
 - **Continue.dev** — writing new code, autocomplete, ask-this-function-something quickly without leaving the editor.
-- **Open WebUI** — exploring an idea, learning, longer back-and-forth conversations, anything where you want chat history saved.
+- **Open WebUI** (DeepSeek) — exploring an idea, learning, longer back-and-forth conversations, anything where you want chat history saved.
 
 ## Reality check on the models
 
-DeepSeek-Coder-V2 16B Lite is genuinely good and runs at zero marginal cost. It's not Claude Opus 4.7. Honest comparison:
+These are good local models that run at zero marginal cost. They are not Claude Opus 4.7. Honest comparison:
 
 **Local stack wins for:** inline autocomplete (zero latency), boilerplate / type hints / docstrings, quick reviews, code on sensitive data you can't send to a cloud API, working offline, iterative loops where API costs would add up.
 
 **Claude still wins for:** multi-file architectural changes across a large codebase, complex debugging that needs deep reasoning, tasks where the cost of a wrong answer is high.
+
+A second caveat specific to local models: they are noticeably less reliable at *structured agent protocols* (aider's SEARCH/REPLACE format, tool calling) than frontier cloud models. The code they write can be excellent while the surrounding orchestration fumbles. Picking the right model per task (Qwen for aider edits, DeepSeek for chat) works around most of this.
 
 A workable pattern: local stack for the 80% of "do the obvious thing" work, Claude for the hard 20%.
 
 ## Troubleshooting
 
 These are the issues we hit while developing this. Each one is now handled automatically by the scaffold, but documenting them helps if something goes sideways.
+
+### aider says "the LLM did not conform to the edit format"
+
+Local models sometimes fail to produce aider's exact SEARCH/REPLACE structure — they may leak the filename into the file content, or append extra malformed blocks after a correct edit. Symptoms include spurious "Create new file?" prompts and a corrupted target file.
+
+Mitigations, in order:
+
+1. Use **Qwen** for aider (the default in this repo). It conforms far more reliably than DeepSeek.
+2. Use the `diff` edit format (also the default): `ds --edit-format diff`.
+3. Always `git commit` before an aider session so you can `git checkout <file>` to recover if an edit corrupts a file.
+4. Always `/add <file>` explicitly before asking for edits, rather than relying on the repo map.
 
 ### `llama-server binary not found` from Ollama
 
