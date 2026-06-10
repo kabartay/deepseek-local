@@ -1,6 +1,9 @@
 # Changelog
 
-## 0.1.0
+All notable changes to this project are documented here.
+The format follows [Keep a Changelog](https://keepachangelog.com).
+
+## 0.1.0 — 2026-06-10
 
 Initial public release.
 
