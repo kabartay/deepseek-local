@@ -1,5 +1,9 @@
 # deepseek-local
 
+![Python](https://img.shields.io/badge/python-3.11+-blue)
+![Platform](https://img.shields.io/badge/platform-Apple%20Silicon-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 A one-command bootstrap for a fully local, Claude-Code-equivalent coding stack on Apple Silicon.
 
 Everything runs on your Mac. No API keys, no cloud, no data leaving your machine.
@@ -9,7 +13,7 @@ Everything runs on your Mac. No API keys, no cloud, no data leaving your machine
 | Tool | Role | Cloud equivalent |
 |------|------|------------------|
 | Ollama | Model runtime | — |
-| DeepSeek-Coder-V2 16B Lite (32k ctx) | Main coding model | Claude Sonnet |
+| DeepSeek-Coder-V2 16B Lite (32k ctx) | Main coding model | mid-tier cloud models |
 | Qwen2.5-Coder 7B (32k ctx) | Fast autocomplete model | GitHub Copilot |
 | aider | Terminal coding agent | Claude Code |
 | Continue.dev | VS Code / JetBrains inline assistant | Cursor / Copilot Chat |
@@ -210,6 +214,10 @@ Ideas worth picking up:
 - `dslocal uninstall` — automate the manual teardown above
 - Add Linux support (most steps work, only the installer paths need tweaking)
 - Add a pyenv-based fallback for the aider Python step
+
+## Author
+
+Built by [Mukharbek Organokov](https://www.organokov.com) · [@kabartay](https://github.com/kabartay)
 
 ## License
 
