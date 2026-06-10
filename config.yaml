@@ -1,0 +1,68 @@
+platform:
+  os: darwin
+  arch: arm64
+  min_ram_gb: 16
+
+ollama:
+  host: http://localhost:11434
+  num_gpu: 99
+  max_loaded_models: 2
+  # use the official installer (https://ollama.com/install.sh).
+  # the Homebrew formula has historically shipped without the
+  # llama-server binary, which breaks inference at runtime.
+  install_method: official
+
+models:
+  main:
+    source: deepseek-coder-v2:16b-lite-instruct-q4_K_M
+    alias: deepseek-coder-32k
+    num_ctx: 32768
+    role: chat
+  fast:
+    source: qwen2.5-coder:7b-instruct-q4_K_M
+    alias: qwen-coder-fast-32k
+    num_ctx: 32768
+    role: autocomplete
+
+aider:
+  config_path: ~/.aider.conf.yml
+  model_ref: main
+  auto_commits: false
+  map_tokens: 4096
+  # python 3.12 has had pyexpat linkage issues on Homebrew —
+  # pin to 3.11 which has rock-solid arm64 wheels for aider's deps.
+  python_versions:
+    - python3.11
+    - python3.12
+    - python3
+
+continue_dev:
+  config_path: ~/.continue/config.json
+  chat_model_ref: main
+  autocomplete_model_ref: fast
+  embeddings_model_ref: main
+
+shell:
+  helpers_path: ~/.deepseek-local.sh
+  rc_files:
+    - ~/.zshrc
+  aliases:
+    ds: aider --model ollama/{main.alias}
+    ds-chat: ollama run {main.alias}
+    ds-fast: ollama run {fast.alias}
+
+webui:
+  enabled: true
+  port: 3000
+  container_name: open-webui
+  image: ghcr.io/open-webui/open-webui:main
+  skip_if_no_docker: true
+
+steps:
+  - prereqs
+  - ollama
+  - models
+  - aider
+  - continue_dev
+  - shell
+  - webui
